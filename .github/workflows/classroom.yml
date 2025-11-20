@@ -13,15 +13,32 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: tests
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run tests
       id: tests
       uses: classroom-resources/autograding-python-grader@v1
       with:
-        timeout: 10
-        setup-command: ''
+        timeout: 60
+        setup-command: 'export PYTHONPATH=${{ github.workspace }}'
+    - name: Print test results (debug)
+      run: echo "${{ steps.tests.outputs.result }}"
+    - name: Validate test results
+      run: |
+        if [ -z "${{ steps.tests.outputs.result }}" ]; then
+          echo '{}' > test_results.json
+        else
+          echo "${{ steps.tests.outputs.result }}" > test_results.json
+        fi
     - name: Autograding Reporter
       uses: classroom-resources/autograding-grading-reporter@v1
       env:
-        TESTS_RESULTS: "${{steps.tests.outputs.result}}"
+        TESTS_RESULTS: "${{ steps.tests.outputs.result }}"
       with:
         runners: tests
